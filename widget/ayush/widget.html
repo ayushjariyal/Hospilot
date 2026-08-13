@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hospilot Widget</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #dbe4ee;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
+      color: var(--text);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .shell {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(420px, 520px) 1fr;
+      padding: 16px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+      min-height: 0;
+    }
+
+    .panel.left {
+      overflow: auto;
+    }
+
+    .panel.right {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font: inherit;
+      background: #fff;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    input:focus, textarea:focus { border-color: rgba(37,99,235,.6); box-shadow: 0 0 0 4px rgba(37,99,235,.12); }
+
+    .grid { display: grid; gap: 12px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .08s ease, background .15s ease, opacity .15s ease;
+    }
+    button:active { transform: translateY(1px); }
+    .primary { background: var(--primary); color: #fff; }
+    .primary:hover { background: var(--primary-hover); }
+    .secondary { background: #e2e8f0; color: var(--text); }
+    .danger { background: #fee2e2; color: var(--danger); }
+    .full { width: 100%; }
+
+    .status {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+    .status.ok { color: var(--success); }
+    .status.err { color: var(--danger); }
+
+    .plan-card {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .plan-card-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .plan-card-title {
+      font-size: 13px;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .plan-card-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .plan-json {
+      margin: 0;
+      padding: 14px;
+      max-height: 320px;
+      overflow: auto;
+      background: #f8fafc;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: var(--primary);
+      font-size: 12px;
+      padding: 8px 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .iframe-wrap {
+      margin-top: 12px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      min-height: 0;
+      background: #fff;
+      flex: 1;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      border: 0;
+      display: block;
+      background: #fff;
+    }
+
+    .small { font-size: 12px; color: var(--muted); }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 860px) {
+      body { overflow: auto; height: auto; min-height: 100vh; }
+      .shell {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
+      .panel.right { min-height: 75vh; }
+      .iframe-wrap, iframe { min-height: 560px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="panel left">
+      <div class="badge">Hospilot Widget</div>
+      <h1>Plan a goal and open the live dashboard</h1>
+      <div class="subtitle">Login to the backend, create a session, poll for the plan, then hand it to Hospilot in an iframe.</div>
+
+      <div class="grid">
+        <div>
+          <label for="goal">Goal</label>
+          <textarea id="goal" placeholder="[CANDIDATE-ayush] Check ICU bed capacity for tonight"></textarea>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="constraints">Constraints</label>
+            <input id="constraints" placeholder="Optional constraints" />
+          </div>
+          <div>
+            <label for="pollMs">Polling interval (ms)</label>
+            <input id="pollMs" type="number" min="1000" step="500" value="2000" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="createBtn">Create session</button>
+          <button class="secondary" id="loginBtn">Login</button>
+          <button class="danger hidden" id="viewBtn">View plan</button>
+        </div>
+
+        <div class="small">Backend origin: same page origin. The widget only calls this backend, not Hospilot directly.</div>
+        <div id="status" class="status">Idle.</div>
+
+        <div id="planCard" class="plan-card hidden">
+          <div class="plan-card-header">
+            <div>
+              <div class="plan-card-title">Plan preview</div>
+              <div id="planMeta" class="plan-card-subtitle">Waiting for pipeline data…</div>
+            </div>
+            <button class="secondary" id="copyPlanBtn" type="button">Copy JSON</button>
+          </div>
+          <pre id="planJson" class="plan-json">{}</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel right">
+      <div class="badge">Live dashboard</div>
+      <div class="subtitle">When a session is ready, the real Hospilot app loads below and receives <code>widget_init</code>.</div>
+      <div class="iframe-wrap">
+        <iframe id="hospilot-frame" src="https://hospilot.carer.ai" title="Hospilot dashboard"></iframe>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const backendBase = "";
+    const frame = document.getElementById("hospilot-frame");
+    const statusEl = document.getElementById("status");
+    const planCard = document.getElementById("planCard");
+    const planMeta = document.getElementById("planMeta");
+    const planJson = document.getElementById("planJson");
+    const copyPlanBtn = document.getElementById("copyPlanBtn");
+    const createBtn = document.getElementById("createBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    const viewBtn = document.getElementById("viewBtn");
+
+    const state = {
+      token: null,
+      user: null,
+      sessionId: null,
+      pollingTimer: null,
+      frameReady: false,
+      planReady: false,
+    };
+
+    function setStatus(message, kind = "") {
+      statusEl.className = `status ${kind}`.trim();
+      statusEl.textContent = message;
+    }
+
+    function showPlan(data) {
+      const pipeline = data.pipeline ?? data.plan ?? data.graph ?? data.workflow ?? data;
+      planCard.classList.remove("hidden");
+      planMeta.textContent = `Session ${state.sessionId} · ${pipeline ? "pipeline available" : "no pipeline yet"}`;
+      planJson.textContent = JSON.stringify(pipeline, null, 2);
+    }
+
+    async function api(path, options = {}) {
+      const mergedHeaders = {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      };
+      const res = await fetch(`${backendBase}${path}`, {
+        ...options,
+        headers: mergedHeaders,
+      });
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json") ? await res.json() : await res.text();
+      if (!res.ok) {
+        const detail = typeof data === "string" ? data : JSON.stringify(data);
+        throw new Error(detail);
+      }
+      return data;
+    }
+
+    async function login() {
+      setStatus("Logging in…");
+      const data = await api("/login", {
+        method: "POST",
+        body: JSON.stringify({ username: "medcity_doc_1", password: "123456" }),
+      });
+      state.token = data.token;
+      state.user = data.user;
+      setStatus(`Logged in as ${data.user.display_name || data.user.username}.`, "ok");
+      return data;
+    }
+
+    async function createSession() {
+      if (!state.token) await login();
+      const goal = document.getElementById("goal").value.trim();
+      const constraints = document.getElementById("constraints").value.trim();
+      if (!goal) throw new Error("Goal is required.");
+
+      setStatus("Creating session…");
+      const data = await api("/sessions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${state.token}` },
+        body: JSON.stringify({ goal, constraints, autonomous: false }),
+      });
+
+      state.sessionId = data.session_id;
+      viewBtn.classList.remove("hidden");
+      showPlan(data);
+      setStatus(`Session created: ${state.sessionId}\nPolling for plan…`);
+      await pollSession();
+      return data;
+    }
+
+    async function pollSession() {
+      clearInterval(state.pollingTimer);
+      const pollMs = Math.max(1000, Number(document.getElementById("pollMs").value || 2000));
+
+      const tick = async () => {
+        if (!state.sessionId || !state.token) return;
+        try {
+          const data = await api(`/sessions/${state.sessionId}`, {
+            headers: { Authorization: `Bearer ${state.token}` },
+          });
+
+          const pipeline = data.pipeline || data.plan || data.graph || data.workflow;
+          showPlan(data);
+          if (pipeline && String(JSON.stringify(pipeline)).trim() !== "") {
+            state.planReady = true;
+            viewBtn.classList.remove("hidden");
+            setStatus(`Plan ready for session ${state.sessionId}. Click View plan.`, "ok");
+            clearInterval(state.pollingTimer);
+          } else {
+            setStatus(`Session ${state.sessionId} is still planning…`);
+          }
+        } catch (err) {
+          setStatus(`Polling failed: ${err.message}`, "err");
+        }
+      };
+
+      await tick();
+      state.pollingTimer = setInterval(tick, pollMs);
+    }
+
+    function sendWidgetInit() {
+      if (!state.sessionId || !state.token) {
+        setStatus("Login and create a session first.", "err");
+        return;
+      }
+      if (!state.frameReady) {
+        setStatus("Waiting for the Hospilot iframe to finish loading…");
+        return;
+      }
+      frame.contentWindow.postMessage(
+        { type: "widget_init", token: state.token, sessionId: state.sessionId },
+        "*"
+      );
+      setStatus(`Sent widget_init for session ${state.sessionId}.`, "ok");
+    }
+
+    frame.addEventListener("load", () => {
+      state.frameReady = true;
+      if (state.sessionId && state.token) sendWidgetInit();
+    });
+
+    loginBtn.addEventListener("click", () => {
+      login().catch(err => setStatus(`Login failed: ${err.message}`, "err"));
+    });
+
+    createBtn.addEventListener("click", () => {
+      createSession().catch(err => setStatus(`Create session failed: ${err.message}`, "err"));
+    });
+
+    viewBtn.addEventListener("click", () => {
+      sendWidgetInit();
+    });
+
+    copyPlanBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(planJson.textContent || "{}");
+        setStatus("Plan JSON copied to clipboard.", "ok");
+      } catch {
+        setStatus("Could not copy plan JSON.", "err");
+      }
+    });
+
+    document.getElementById("goal").value = "[CANDIDATE-ayush] Check ICU bed capacity for tonight";
+  </script>
+</body>
+</html>
